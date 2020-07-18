@@ -326,7 +326,7 @@ public class TransactionServiceImpl extends ServiceImpl <TransactionMapper, Tran
             fromWallet.setBalAvail(fromWallet.getBalAvail().add(trans.getFromAmount()).add(trans.getFeeAmount()));
             trans.setTransStatus(TransStatusEnum.REJECTED.getCode());
         } else {
-            fromWallet.setBalTotal(fromWallet.getBalTotal().subtract(trans.getFromAmount()).subtract(trans.getFeeAmount()));
+            fromWallet.setBalTotal(fromWallet.getBalTotal().subtract(trans.getFromAmount()));
             String transHash = sysWalletOut(trans.getFromWalletAddress(), trans.getToWalletAddress(), trans.getFromWalletType(), trans.getToAmount());
             if (StringUtils.isBlank(transHash)) {
                 return ResponseResult.fail("-999", "上链提现交易失败");
@@ -334,7 +334,7 @@ public class TransactionServiceImpl extends ServiceImpl <TransactionMapper, Tran
             trans.setTransHash(transHash);
             trans.setTransStatus(TransStatusEnum.SUCCESS.getCode());
         }
-        fromWallet.setBalFreeze(fromWallet.getBalFreeze().subtract(trans.getFromAmount()).subtract(trans.getFeeAmount()));
+        fromWallet.setBalFreeze(fromWallet.getBalFreeze().subtract(trans.getFromAmount()));
         walletService.updateById(fromWallet);
         // 交易记录更新
         trans.setModifyTime(new Date());
@@ -405,8 +405,8 @@ public class TransactionServiceImpl extends ServiceImpl <TransactionMapper, Tran
         transaction.setToWalletAddress(toAddress);
         transaction.setFeeAmount(fee);
         if (needVerify) {
-            fromWallet.setBalAvail(fromWallet.getBalAvail().subtract(cashOutAmt).subtract(fee));
-            fromWallet.setBalFreeze(fromWallet.getBalFreeze().add(cashOutAmt).add(fee));
+            fromWallet.setBalAvail(fromWallet.getBalAvail().subtract(cashOutAmt));
+            fromWallet.setBalFreeze(fromWallet.getBalFreeze().add(cashOutAmt));
             transaction.setTransStatus(TransStatusEnum.INIT.getCode());
         } else {
             fromWallet.setBalTotal(fromWallet.getBalTotal().subtract(cashOutAmt));

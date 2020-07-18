@@ -41,7 +41,7 @@ public class ContractProfitScheduler {
     @Autowired
     private ExchangeCenter exchangeCenter;
 
-    @Scheduled(cron = "0 50 23 * * ?")
+    @Scheduled(cron = "0 55 23 * * ?")
     public void releaseProfit() {
         logger.info("{}合约结算开始...", LOG_PREFIX);
         long startTime = System.currentTimeMillis();
