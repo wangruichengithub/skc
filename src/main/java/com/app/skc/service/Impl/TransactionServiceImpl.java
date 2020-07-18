@@ -77,7 +77,7 @@ public class TransactionServiceImpl extends ServiceImpl <TransactionMapper, Tran
      */
     @Transactional(rollbackFor = Exception.class)
     @Override
-    public ResponseResult transfer(String toWalletAddress, String amount, String userId, String walletType) throws InterruptedException, ExecutionException, BusinessException, CipherException, IOException {
+    public ResponseResult transfer(String toWalletAddress, String amount, String userId, String walletType) throws Exception {
         ResponseResult paramsChkRes = transParamsChk(walletType, toWalletAddress, amount);
         if (paramsChkRes != null) {
             return paramsChkRes;
@@ -148,7 +148,7 @@ public class TransactionServiceImpl extends ServiceImpl <TransactionMapper, Tran
      * @param trans      转账数量
      * @param fee        手续费
      */
-    private void saveTransfer(String userId, String walletType, Wallet fromWallet, Wallet toWallet, BigDecimal trans, BigDecimal fee) {
+    private void saveTransfer(String userId, String walletType, Wallet fromWallet, Wallet toWallet, BigDecimal trans, BigDecimal fee) throws BusinessException {
         Transaction transaction = new Transaction();
         transaction.setTransId(BaseUtils.get64UUID());
         transaction.setFeeAmount(fee);
@@ -167,8 +167,14 @@ public class TransactionServiceImpl extends ServiceImpl <TransactionMapper, Tran
         transaction.setCreateTime(new Date());
         transaction.setModifyTime(new Date());
         transactionMapper.insert(transaction);
-        walletService.updateById(fromWallet);
-        walletService.updateById(toWallet);
+        boolean fromWalletRes = walletService.updateById(fromWallet);
+        if (!fromWalletRes) {
+            throw new BusinessException("update from_wallet false!");
+        }
+        boolean toWalletRes = walletService.updateById(toWallet);
+        if (!toWalletRes) {
+            throw new BusinessException("update to_wallet false!");
+        }
     }
 
     /**

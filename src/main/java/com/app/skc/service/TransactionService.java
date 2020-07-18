@@ -27,7 +27,7 @@ public interface TransactionService extends IService<Transaction> {
      *
      * @return ResponseResult
      */
-    ResponseResult transfer(String toWalletAddress, String transferNumber, String userId, String walletType) throws InterruptedException, ExecutionException, BusinessException, CipherException, IOException;
+    ResponseResult transfer(String toWalletAddress, String transferNumber, String userId, String walletType) throws Exception;
 
     /**
      * 根据交易类型分页查询交易记录
