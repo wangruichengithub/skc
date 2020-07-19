@@ -5,6 +5,8 @@ import com.app.skc.enums.ApiErrEnum;
 import com.app.skc.enums.TransStatusEnum;
 import com.app.skc.enums.TransTypeEum;
 import com.app.skc.enums.WalletEum;
+import com.app.skc.mapper.TradeFrezzeMapper;
+import com.app.skc.model.TradeFreeze;
 import com.app.skc.service.TransactionService;
 import com.app.skc.service.WalletService;
 import com.app.skc.utils.SkcConstants;
@@ -20,6 +22,7 @@ import org.web3j.protocol.Web3j;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -35,6 +38,9 @@ public class WalletController {
 	private TransactionService transactionService;
 	@Autowired
 	private Web3j web3j;
+
+	@Autowired
+	private TradeFrezzeMapper tradeFrezzeMapper;
 
 	/**
 	 * 获取用户钱包可用余额信息
@@ -128,6 +134,11 @@ public class WalletController {
 			String walletType = jsonObject.getString("walletType");
 			String toAddress = jsonObject.getString("toAddress");
 			String amount = jsonObject.getString("amount");
+			Map map = new HashMap();
+			List <TradeFreeze> list = tradeFrezzeMapper.selectByMap(map);
+			if (list.size()>0){
+				return ResponseResult.fail(ApiErrEnum.USER_CANT_TRADE);
+			}
 			return transactionService.cashOut(userId, walletType, toAddress, amount);
 		} catch (Exception e) {
 			logger.error("提现交易异常", e);

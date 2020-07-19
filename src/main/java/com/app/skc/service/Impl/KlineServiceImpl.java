@@ -40,7 +40,11 @@ public class KlineServiceImpl extends ServiceImpl<KlineMapper, Kline> implements
             entityWrapper.ge(START_TIME,start);
         }else{
             Calendar calendar = Calendar.getInstance();
-            calendar.add(Calendar.DATE, -3); //得到前一天
+            if (type.equalsIgnoreCase(KlineEum.D1.getCode())){
+                calendar.add(Calendar.DATE, -30); //得到
+            }else {
+                calendar.add(Calendar.DATE, -3); //得到前一天
+            }
             Date date = calendar.getTime();
             entityWrapper.ge(START_TIME,date);
         }

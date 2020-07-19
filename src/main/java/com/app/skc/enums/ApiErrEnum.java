@@ -12,7 +12,7 @@ public enum ApiErrEnum {
     WALLET_TYPE_NOT_SUPPORTED("1005", "不支持的钱包类型"),
     WALLET_NOT_MAINTAINED("1006", "钱包地址用户不存在"),
     USER_NOT_EXISTED("1007", "系统用户不存在"),
-
+    USER_CANT_TRADE("1008","此账户不能进行转账,提现 操作。"),
     NO_DEAL_PRICE("1101", "无最新成交价"),
     NO_COMMISSION("1102", "无委托交易"),
     NO_ENTRUST_ORDER("1103", "无委托交易"),
