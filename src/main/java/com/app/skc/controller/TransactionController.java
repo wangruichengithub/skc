@@ -2,6 +2,8 @@ package com.app.skc.controller;
 
 import com.alibaba.fastjson.JSONObject;
 import com.app.skc.enums.ApiErrEnum;
+import com.app.skc.mapper.TradeFrezzeMapper;
+import com.app.skc.model.TradeFreeze;
 import com.app.skc.service.TransactionService;
 import com.app.skc.utils.viewbean.Page;
 import com.app.skc.utils.viewbean.ResponseResult;
@@ -13,6 +15,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -28,6 +32,8 @@ import java.util.Map;
 @RequestMapping("/transaction")
 public class TransactionController {
 
+	@Autowired
+	private TradeFrezzeMapper tradeFrezzeMapper;
 	private final TransactionService transactionService;
 	private static final Logger logger = LoggerFactory.getLogger(TransactionController.class);
 	@Autowired
@@ -71,6 +77,12 @@ public class TransactionController {
 				String transferNumber = jsonObject.getString("transferNumber");
 				String userId = jsonObject.getString("userId");
 				String walletType = jsonObject.getString("walletType");
+                Map map = new HashMap();
+                map.put("user_id",userId);
+                List<TradeFreeze> list = tradeFrezzeMapper.selectByMap(map);
+                if (list.size()>0){
+                	return ResponseResult.fail(ApiErrEnum.USER_CANT_TRADE);
+				}
 				return transactionService.transfer(toWalletAddress, transferNumber, userId, walletType);
 			}
 		} catch (Exception e) {
