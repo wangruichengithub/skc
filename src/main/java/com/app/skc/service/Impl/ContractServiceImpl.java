@@ -17,6 +17,7 @@ import com.app.skc.service.ContractService;
 import com.app.skc.service.system.ConfigService;
 import com.app.skc.utils.BaseUtils;
 import com.app.skc.utils.SkcConstants;
+import com.app.skc.utils.jdbc.SqlUtils;
 import com.app.skc.utils.viewbean.Page;
 import com.baomidou.mybatisplus.mapper.EntityWrapper;
 import com.baomidou.mybatisplus.service.impl.ServiceImpl;
@@ -167,6 +168,7 @@ public class ContractServiceImpl extends ServiceImpl<ContractMapper, Contract> i
         PageHelper.startPage(page);
         EntityWrapper <Income> entityWrapper = new EntityWrapper <>();
         entityWrapper.eq("userId", userId);
+        entityWrapper.orderDesc(SqlUtils.orderBy("createTime"));
         List <Income> list = incomeMapper.selectList(entityWrapper);
         return list;
     }
