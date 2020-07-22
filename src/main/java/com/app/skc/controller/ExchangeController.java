@@ -4,6 +4,8 @@ package com.app.skc.controller;
 import com.app.skc.enums.ApiErrEnum;
 import com.app.skc.enums.KlineEum;
 import com.app.skc.enums.TransTypeEum;
+import com.app.skc.mapper.TradeFrezzeMapper;
+import com.app.skc.model.TradeFreeze;
 import com.app.skc.service.KlineService;
 import com.app.skc.service.TransactionService;
 import com.app.skc.utils.viewbean.Page;
@@ -19,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -33,6 +36,8 @@ import java.util.Map;
 @Controller
 @RequestMapping("/exchange")
 public class ExchangeController {
+    @Autowired
+    private TradeFrezzeMapper tradeFrezzeMapper;
 
     private static final Logger logger = LoggerFactory.getLogger(ExchangeController.class);
 
@@ -150,6 +155,12 @@ public class ExchangeController {
             @RequestParam String price,
             @RequestParam String quantity) {
         try {
+            Map map = new HashMap();
+            map.put("user_id",userId);
+            List <TradeFreeze> list = tradeFrezzeMapper.selectByMap(map);
+            if (list.size()>0){
+                return ResponseResult.fail(ApiErrEnum.USER_CANT_TRADE);
+            }
             BigDecimal bigDecimal = BigDecimal.valueOf(Double.parseDouble(quantity));
             return transactionService.buy(userId, price, bigDecimal);
         } catch (Exception e) {
@@ -172,6 +183,12 @@ public class ExchangeController {
             @RequestParam String price,
             @RequestParam String quantity) {
         try {
+            Map map = new HashMap();
+            map.put("user_id",userId);
+            List <TradeFreeze> list = tradeFrezzeMapper.selectByMap(map);
+            if (list.size()>0){
+                return ResponseResult.fail(ApiErrEnum.USER_CANT_TRADE);
+            }
             BigDecimal bigDecimal = BigDecimal.valueOf(Double.parseDouble(quantity));
             return transactionService.sell(userId, price, bigDecimal);
         } catch (Exception e) {

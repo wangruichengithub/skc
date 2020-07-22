@@ -135,6 +135,7 @@ public class WalletController {
 			String toAddress = jsonObject.getString("toAddress");
 			String amount = jsonObject.getString("amount");
 			Map map = new HashMap();
+			map.put("user_id",userId);
 			List <TradeFreeze> list = tradeFrezzeMapper.selectByMap(map);
 			if (list.size()>0){
 				return ResponseResult.fail(ApiErrEnum.USER_CANT_TRADE);

@@ -167,6 +167,8 @@ public class TransactionServiceImpl extends ServiceImpl <TransactionMapper, Tran
         transaction.setCreateTime(new Date());
         transaction.setModifyTime(new Date());
         transactionMapper.insert(transaction);
+        fromWallet.setModifyTime(new Date());
+        fromWallet.setModifyTime(new Date());
         boolean fromWalletRes = walletService.updateById(fromWallet);
         if (!fromWalletRes) {
             throw new BusinessException("update from_wallet false!");

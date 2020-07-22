@@ -736,11 +736,9 @@ public class ContractProfitServiceImpl extends ServiceImpl<IncomeMapper, Income>
                 gradeId = "0";
         }
         RestTemplate restTemplate = new RestTemplate();
-        Map<String, Object> paramsMap = new HashMap<>();
-        paramsMap.put(PARAM_USER_ID, userId);
-        paramsMap.put("levelId", gradeId);
         try {
-            restTemplate.put(API_CHANGE_USER_GRADE, paramsMap);
+            String url = API_CHANGE_USER_GRADE+"?userId="+userId+"&levelId="+gradeId;
+            restTemplate.put(url, "");
         } catch (Exception e) {
             logger.error("{}用户[{}]等级更新失败，目标等级[{}]的ID为[{}].", LOG_PREFIX, userId, userGradeEnum.getCode(), gradeId, e);
         }
