@@ -3,6 +3,7 @@ package com.app.skc.service.Impl;
 import com.alibaba.fastjson.JSON;
 import com.app.skc.enums.ApiErrEnum;
 import com.app.skc.enums.InfuraInfo;
+import com.app.skc.enums.TransTypeEum;
 import com.app.skc.enums.WalletEum;
 import com.app.skc.exception.BusinessException;
 import com.app.skc.mapper.WalletMapper;
@@ -17,6 +18,7 @@ import com.app.skc.utils.viewbean.ResponseResult;
 import com.baomidou.mybatisplus.mapper.EntityWrapper;
 import com.baomidou.mybatisplus.service.impl.ServiceImpl;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.poi.ss.formula.functions.T;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,14 +56,14 @@ import java.util.concurrent.ExecutionException;
 
 /**
  * <p>
- *  服务实现类
+ * 服务实现类
  * </p>
  *
  * @author rwang
  * @since 2020-06-08
  */
 @Service("walletService")
-public class WalletServiceImpl extends ServiceImpl<WalletMapper, Wallet> implements WalletService {
+public class WalletServiceImpl extends ServiceImpl <WalletMapper, Wallet> implements WalletService {
     private static final Logger log = LoggerFactory.getLogger(WalletServiceImpl.class);
     private static final String NULL = null;
     private static final String ADDRESS = "address";
@@ -69,6 +71,7 @@ public class WalletServiceImpl extends ServiceImpl<WalletMapper, Wallet> impleme
     @Autowired
     private final WalletMapper walletMapper;
     private static final String LOG_PREFIX = "[钱包服务] - ";
+
     @Autowired
     public WalletServiceImpl(WalletMapper walletMapper) {
         this.walletMapper = walletMapper;
@@ -79,7 +82,7 @@ public class WalletServiceImpl extends ServiceImpl<WalletMapper, Wallet> impleme
     @Autowired
     private static Web3j web3j;
     @Autowired
-    private ContractService  contractService;
+    private ContractService contractService;
 
     /**
      * 创建钱包
@@ -92,15 +95,15 @@ public class WalletServiceImpl extends ServiceImpl<WalletMapper, Wallet> impleme
     @Transactional(rollbackFor = Exception.class)
     @Override
     public ResponseResult createWallet(String userId) throws IOException, CipherException, InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
-        log.info("{}开始为用户:{}创建钱包",LOG_PREFIX,userId);
+        log.info("{}开始为用户:{}创建钱包", LOG_PREFIX, userId);
         File file = new File(SkcConstants.NFS_WALLET_PATH);
         System.out.println(file.exists());
-        if(!file.exists()){
+        if (!file.exists()) {
             file.mkdirs();
         }
         String ethwalletName = WalletUtils.generateNewWalletFile("", new File(SkcConstants.NFS_WALLET_PATH), true);
-        if (ethwalletName!=null){
-            log.info("{}用户:{}钱包生成成功",LOG_PREFIX,userId);
+        if (ethwalletName != null) {
+            log.info("{}用户:{}钱包生成成功", LOG_PREFIX, userId);
             String walletFilePath = SkcConstants.NFS_WALLET_PATH + "/" + ethwalletName;
             Credentials credentials = WalletUtils.loadCredentials("", walletFilePath);
             String address = credentials.getAddress();
@@ -109,25 +112,24 @@ public class WalletServiceImpl extends ServiceImpl<WalletMapper, Wallet> impleme
             BigInteger privateKey = credentials.getEcKeyPair().getPrivateKey();
             Wallet wallet = saveWallet(userId, walletFilePath, address, date, publicKey, privateKey);
             Map <String, String> map = getReturnWallet(wallet);
-            log.info("{}用户:{}钱包创建完成",LOG_PREFIX,userId);
-            return ResponseResult.success("创建成功",map);
-        }else {
-            log.info("{}用户:{}钱包创建失败",LOG_PREFIX,userId);
+            log.info("{}用户:{}钱包创建完成", LOG_PREFIX, userId);
+            return ResponseResult.success("创建成功", map);
+        } else {
+            log.info("{}用户:{}钱包创建失败", LOG_PREFIX, userId);
             return ResponseResult.fail(ApiErrEnum.CREATE_WALLET_FAIL);
         }
 
     }
 
-
     @Override
-    public BigDecimal getERC20Balance(String fromAddress ,String contractAddress) {
+    public BigDecimal getERC20Balance(String fromAddress, String contractAddress) {
         String methodName = "balanceOf";
         List <Type> inputParameters = new ArrayList <>();
-        List<TypeReference<?>> outputParameters = new ArrayList<>();
+        List <TypeReference <?>> outputParameters = new ArrayList <>();
         Address address = new Address(fromAddress);
         inputParameters.add(address);
 
-        TypeReference<Uint256> typeReference = new TypeReference <Uint256>() {
+        TypeReference <Uint256> typeReference = new TypeReference <Uint256>() {
         };
         outputParameters.add(typeReference);
         Function function = new Function(methodName, inputParameters, outputParameters);
@@ -139,8 +141,8 @@ public class WalletServiceImpl extends ServiceImpl<WalletMapper, Wallet> impleme
         try {
             initWeb3j();
             ethCall = web3j.ethCall(transaction, DefaultBlockParameterName.LATEST).send();
-            List<Type> results = FunctionReturnDecoder.decode(ethCall.getValue(), function.getOutputParameters());
-            String value =  results.get(0).getValue().toString();
+            List <Type> results = FunctionReturnDecoder.decode(ethCall.getValue(), function.getOutputParameters());
+            String value = results.get(0).getValue().toString();
             balanceValue = new BigDecimal(value);
         } catch (IOException e) {
             e.printStackTrace();
@@ -151,6 +153,7 @@ public class WalletServiceImpl extends ServiceImpl<WalletMapper, Wallet> impleme
 
     /**
      * 获取以太坊余额
+     *
      * @param address
      * @return
      * @throws IOException
@@ -165,15 +168,16 @@ public class WalletServiceImpl extends ServiceImpl<WalletMapper, Wallet> impleme
 
     /**
      * 提现上链
+     *
      * @param fromAddress
      * @param toAddress
      * @param amount
-     * @param fromPath 提现(上链)
+     * @param fromPath    提现(上链)
      * @return
      */
     @Transactional(rollbackFor = Exception.class)
     @Override
-    public String withdraw(String fromAddress, String toAddress, BigDecimal amount,String fromPath) throws BusinessException, ExecutionException, InterruptedException, IOException, CipherException {
+    public String withdraw(String fromAddress, String toAddress, BigDecimal amount, String fromPath) throws BusinessException, ExecutionException, InterruptedException, IOException, CipherException {
         //判断转出地址
         if (!toAddress.startsWith("0x") || toAddress.length() != 42) {
             throw new BusinessException(null);
@@ -223,10 +227,10 @@ public class WalletServiceImpl extends ServiceImpl<WalletMapper, Wallet> impleme
             return ResponseResult.fail(ApiErrEnum.REQ_PARAM_NOT_NULL);
         }
         BigDecimal contartNum = contractService.queryContarct(userId);
-        EntityWrapper<Wallet> walletWrapper = new EntityWrapper<>();
+        EntityWrapper <Wallet> walletWrapper = new EntityWrapper <>();
         walletWrapper.eq("user_id", userId);
         walletWrapper.eq("wallet_type", walletType);
-        List<Wallet> walletList = walletMapper.selectList(walletWrapper);
+        List <Wallet> walletList = walletMapper.selectList(walletWrapper);
         if (!CollectionUtils.isEmpty(walletList) && walletList.get(0) != null) {
             Wallet dbWallet = walletList.get(0);
             Wallet wallet = new Wallet();
@@ -247,11 +251,11 @@ public class WalletServiceImpl extends ServiceImpl<WalletMapper, Wallet> impleme
 
     @Override
     public Wallet getWallet(String userId, WalletEum walletType) {
-        EntityWrapper<Wallet> toWalletWrapper = new EntityWrapper<>();
+        EntityWrapper <Wallet> toWalletWrapper = new EntityWrapper <>();
         toWalletWrapper.eq(SkcConstants.USER_ID, userId);
         toWalletWrapper.eq(SkcConstants.WALLET_TYPE, walletType.getCode());
-        List<Wallet> toWallets = walletMapper.selectList(toWalletWrapper);
-        if (CollectionUtils.isEmpty(toWallets)){
+        List <Wallet> toWallets = walletMapper.selectList(toWalletWrapper);
+        if (CollectionUtils.isEmpty(toWallets)) {
             return null;
         }
         return toWallets.get(0);
@@ -268,11 +272,11 @@ public class WalletServiceImpl extends ServiceImpl<WalletMapper, Wallet> impleme
         if (StringUtils.isBlank(userId)) {
             return ResponseResult.fail(ApiErrEnum.REQ_PARAM_NOT_NULL);
         }
-        EntityWrapper<Wallet> walletWrapper = new EntityWrapper<>();
+        EntityWrapper <Wallet> walletWrapper = new EntityWrapper <>();
         walletWrapper.eq("user_id", userId);
-        List<Wallet> walletList = walletMapper.selectList(walletWrapper);
+        List <Wallet> walletList = walletMapper.selectList(walletWrapper);
         if (!CollectionUtils.isEmpty(walletList)) {
-            List<Wallet> walletAdds = new ArrayList<>();
+            List <Wallet> walletAdds = new ArrayList <>();
             for (Wallet wallet : walletList) {
                 if (wallet != null) {
                     Wallet resWallet = new Wallet();
@@ -289,7 +293,50 @@ public class WalletServiceImpl extends ServiceImpl<WalletMapper, Wallet> impleme
     }
 
     /**
+     * 增加用户钱包余额
+     *
+     * @param userId 用户名
+     * @param amount 金额
+     * @return
+     */
+    @Transactional
+    @Override
+    public ResponseResult addSkBal(String userId, String amount) {
+        Date date = new Date();
+        Wallet wallet = new Wallet();
+        EntityWrapper <Wallet> walletWrapper = new EntityWrapper <>();
+        walletWrapper.eq("user_id", userId);
+        walletWrapper.eq("wallet_type", WalletEum.SK.getCode());
+        wallet = wallet.selectOne(walletWrapper);
+        BigDecimal num = new BigDecimal(amount);
+        if (wallet != null) {
+            wallet.setBalAvail(wallet.getBalAvail().add(num));
+            wallet.setBalTotal(wallet.getBalTotal().add(num));
+            wallet.updateById();
+            com.app.skc.model.Transaction transaction = new com.app.skc.model.Transaction();
+            transaction.setTransId(BaseUtils.get64UUID());
+            transaction.setTransType(TransTypeEum.GAME.getCode());
+            transaction.setFromUserId(userId);
+            transaction.setFromWalletType(WalletEum.SK.getCode());
+            transaction.setFromWalletAddress(wallet.getAddress());
+            transaction.setFromAmount(num);
+            transaction.setToAmount(num);
+            transaction.setToWalletAddress(wallet.getAddress());
+            transaction.setCreateTime(date);
+            transaction.setModifyTime(date);
+            transaction.insert();
+            return ResponseResult.success();
+        }else {
+            return ResponseResult.fail(ApiErrEnum.WALLET_NOT_MAINTAINED);
+        }
+
+    }
+
+
+
+    /**
      * 保存用户钱包
+     *
      * @param userId
      * @param walletFilePath
      * @param address
@@ -315,18 +362,18 @@ public class WalletServiceImpl extends ServiceImpl<WalletMapper, Wallet> impleme
         wallet.setModifyTime(date);
         wallet.setUserId(userId);
         wallet.setWalletType(WalletEum.ETH.getCode());
-        log.info("{}开始保存用户:{}的ETH钱包[{}]",LOG_PREFIX,userId, JSON.toJSONString(wallet));
+        log.info("{}开始保存用户:{}的ETH钱包[{}]", LOG_PREFIX, userId, JSON.toJSONString(wallet));
         wallet.setWalletId(BaseUtils.get64UUID());
         walletMapper.insert(wallet);
-        log.info("{}开始保存用户:{}的USDT钱包[{}]",LOG_PREFIX,userId, JSON.toJSONString(wallet));
+        log.info("{}开始保存用户:{}的USDT钱包[{}]", LOG_PREFIX, userId, JSON.toJSONString(wallet));
         wallet.setWalletId(BaseUtils.get64UUID());
         wallet.setWalletType(WalletEum.USDT.getCode());
         walletMapper.insert(wallet);
-        log.info("{}开始保存用户:{}的SK钱包[{}]",LOG_PREFIX,userId, JSON.toJSONString(wallet));
+        log.info("{}开始保存用户:{}的SK钱包[{}]", LOG_PREFIX, userId, JSON.toJSONString(wallet));
         wallet.setWalletId(BaseUtils.get64UUID());
         wallet.setWalletType(WalletEum.SK.getCode());
         walletMapper.insert(wallet);
-        log.info("{}用户:{}钱包保存成功",LOG_PREFIX,userId);
+        log.info("{}用户:{}钱包保存成功", LOG_PREFIX, userId);
         return wallet;
     }
 
@@ -336,8 +383,8 @@ public class WalletServiceImpl extends ServiceImpl<WalletMapper, Wallet> impleme
      * @param wallet
      * @return
      */
-    private Map<String, String> getReturnWallet(Wallet wallet) {
-        Map<String, String> map = new HashMap<>(2);
+    private Map <String, String> getReturnWallet(Wallet wallet) {
+        Map <String, String> map = new HashMap <>(2);
         map.put(ADDRESS, wallet.getAddress());
         map.put(MNEMONIC, wallet.getMnemonic());
         return map;

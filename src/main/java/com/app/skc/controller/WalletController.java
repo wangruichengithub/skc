@@ -193,5 +193,22 @@ public class WalletController {
 
 	}
 
+
+	@PostMapping("addSkBalance")
+	public ResponseResult addBalance(@RequestBody JSONObject jsonObject){
+		String amount = "";
+		String userId = "";
+		if (jsonObject!=null){
+			amount = jsonObject.getString("amount");
+			userId = jsonObject.getString("userId");
+		}
+		if (StringUtils.isNotBlank(amount)&&StringUtils.isNotBlank(userId)){
+			logger.info("开始进行sk充值，请求参数userId=[{}],amount=[{}]", userId,amount);
+		} else {
+			logger.info("请求参数为空");
+		}
+         return walletService.addSkBal(userId,amount);
+	}
+
 }
 

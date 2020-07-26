@@ -1,6 +1,5 @@
 package com.app.skc.service.Impl;
 
-import com.app.skc.enums.SysConfigEum;
 import com.app.skc.enums.TransStatusEnum;
 import com.app.skc.enums.TransTypeEum;
 import com.app.skc.enums.WalletEum;

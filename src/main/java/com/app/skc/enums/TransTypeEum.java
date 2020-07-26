@@ -11,7 +11,8 @@ public enum TransTypeEum {
     IN("4", "充值"),
     FREEZE("5", "冻结"),
     UNFREEZE("6", "解冻"),
-    CONTRACT("7","购买合约");
+    CONTRACT("7","购买合约"),
+    GAME("8","游戏增加");
     /**
      * 描述
      */

@@ -84,4 +84,12 @@ public interface WalletService extends IService<Wallet> {
      */
     ResponseResult getAddress(String userId);
 
+    /**
+     * 增加用户 SK钱包余额
+     * @param userId
+     * @param amount
+     * @return
+     */
+    ResponseResult addSkBal(String userId,String amount);
+
 }
