@@ -21,6 +21,7 @@ import org.web3j.crypto.CipherException;
 import org.web3j.protocol.Web3j;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -135,6 +136,14 @@ public class WalletController {
 			String toAddress = jsonObject.getString("toAddress");
 			String amount = jsonObject.getString("amount");
 			Map map = new HashMap();
+			BigDecimal check = new BigDecimal(amount);
+			if (check.compareTo(BigDecimal.ZERO)<0){
+				return ResponseResult.fail(ApiErrEnum.TRANS_AMOUNT_INVALID);
+			}
+			if (amount.contains("-")){
+				return ResponseResult.fail(ApiErrEnum.TRANS_AMOUNT_INVALID);
+			}
+
 			map.put("user_id",userId);
 			List <TradeFreeze> list = tradeFrezzeMapper.selectByMap(map);
 			if (list.size()>0){

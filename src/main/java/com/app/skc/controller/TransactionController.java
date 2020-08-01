@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -77,6 +78,13 @@ public class TransactionController {
 				String transferNumber = jsonObject.getString("transferNumber");
 				String userId = jsonObject.getString("userId");
 				String walletType = jsonObject.getString("walletType");
+                BigDecimal check = new BigDecimal(transferNumber);
+				if (check.compareTo(BigDecimal.ZERO)<0){
+					return ResponseResult.fail(ApiErrEnum.TRANS_AMOUNT_INVALID);
+				}
+				if (transferNumber.contains("-")){
+					return ResponseResult.fail(ApiErrEnum.TRANS_AMOUNT_INVALID);
+				}
                 Map map = new HashMap();
                 map.put("user_id",userId);
                 List<TradeFreeze> list = tradeFrezzeMapper.selectByMap(map);
