@@ -29,9 +29,9 @@ spring:
   profiles: dev
   datasource:
     name: skcdb
-    url: jdbc:mysql://129.226.181.145:3306/skcdb?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true&failOverReadOnly=false&useSSL=false&serverTimezone=CTT
-    username: root
-    password: SGC123456
+    url: xxx
+    username: xx
+    password: xxx
   redis:
     #redis 服务器地址
     host: 129.226.181.145
