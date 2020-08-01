@@ -175,6 +175,10 @@ public class ContractProfitServiceImpl extends ServiceImpl<IncomeMapper, Income>
      * @param dateAcct
      */
     private void dealMngProfit(Map<String, Income> incomeMap, Map<String, Transaction> allShareTrans, UserShareVO user, Transaction contractTrans, List<UserShareVO> allEffSubUserList, Wallet contractWallet, Income contractIncome, List<UserShareVO> effDirectSubUserList, String dateAcct) {
+        logger.info("开始计算用户:"+user.getName()+"的管理收益");
+        if (user.getName().equalsIgnoreCase("nxy666")||user.getName().equalsIgnoreCase("nxy777")){
+            logger.info("开始计算用户:"+user.getName()+"的管理收益");
+        }
         int directShare = effDirectSubUserList.size();
         BigDecimal totalContract = allShareTrans.get(user.getId()).getPrice();
         for (UserShareVO subUser : allEffSubUserList) {
@@ -189,6 +193,7 @@ public class ContractProfitServiceImpl extends ServiceImpl<IncomeMapper, Income>
         if (userTempGrade != null) {
             curUserGrade = userTempGrade.intValue();
         }
+        //获取用户下所有有效用户
         List<UserShareVO> absEffSubUserList = new ArrayList<>();
         for (UserShareVO eachSubUser : effDirectSubUserList) {
             fulfillAbsEffSubUserList(absEffSubUserList, eachSubUser, curUserGrade);
@@ -203,21 +208,38 @@ public class ContractProfitServiceImpl extends ServiceImpl<IncomeMapper, Income>
                 oriMngRate = getMngRate(effDirectSubUserList, totalContract, user);
             }
             BigDecimal mngProfit = BigDecimal.ZERO;
+            //循环用户底下所以有效用户
+            logger.info("用户伞下所有有效用户:{}",JSONObject.toJSONString(absEffSubUserList));
             for (UserShareVO eachSubUser : absEffSubUserList) {
                 if (incomeMap.get(eachSubUser.getId()) == null) {
                     continue;
                 }
+                if (eachSubUser.getName().equalsIgnoreCase("nyx888")){
+                    logger.info("开始计算 nyx888");
+                };
                 BigDecimal mngRate = new BigDecimal(oriMngRate.toString());
                 int subUserGrade = Integer.parseInt(eachSubUser.getGradeId());
+
                 Integer tempUserGradde = getUserTempLevel(eachSubUser.getId());
+                List <UserShareVO> list = getLineList(eachSubUser,allEffSubUserList,user);
+                List <Integer>grade  = new ArrayList();
                 //判断用户是否有临时等级
                 if (tempUserGradde != null) {
                     subUserGrade = tempUserGradde;
+                    grade.add(tempUserGradde);
                 }
+                for(UserShareVO userShareGrades:list){
+                    if(getUserTempLevel(userShareGrades.getGradeId())!=null){
+                        grade.add(getUserTempLevel(userShareGrades.getGradeId()));
+                    }else {
+                        grade.add(Integer.parseInt(userShareGrades.getGradeId()));
+                    }
+                }
+                Integer maxGrade = Collections.max(grade);
+
                 if (subUserGrade != 0) {
                     //获取社区收益率
-                    BigDecimal subUserRate = getUserGradeRate(subUserGrade);
-                    mngRate = mngRate.subtract(subUserRate);
+                    mngRate = mngRate.subtract(getUserGradeRate(maxGrade));
                 }
                 if (mngRate.compareTo(BigDecimal.ZERO) <= 0) {
                     continue;
@@ -689,6 +711,10 @@ public class ContractProfitServiceImpl extends ServiceImpl<IncomeMapper, Income>
      */
     private void fulfillAbsEffSubUserList(List<UserShareVO> subUserList, UserShareVO userShareVO, int curUserGrade) {
         int subUserGrade = Integer.parseInt(userShareVO.getGradeId());
+        Integer userTempGrade = getUserTempLevel(userShareVO.getId());
+        if (userTempGrade != null) {
+            subUserGrade =userTempGrade;
+        }
         if (EFFECTIVE.equals(userShareVO.getStatus()) && (subUserGrade == 0 || curUserGrade > subUserGrade)) {
             subUserList.add(userShareVO);
             if (!CollectionUtils.isEmpty(userShareVO.getSubUsers())) {
@@ -742,6 +768,38 @@ public class ContractProfitServiceImpl extends ServiceImpl<IncomeMapper, Income>
         } catch (Exception e) {
             logger.error("{}用户[{}]等级更新失败，目标等级[{}]的ID为[{}].", LOG_PREFIX, userId, userGradeEnum.getCode(), gradeId, e);
         }
+    }
+
+
+
+    public List getLineList(UserShareVO subUser,List<UserShareVO>allUser,UserShareVO rootUser){
+        List list = new ArrayList();
+        getParentUser(allUser,subUser,list,rootUser);
+        logger.info("用户{}的上级用户是{}",subUser.getName(),JSONObject.toJSONString(list));
+        return list;
+    }
+
+    /**
+     * 获取上级用户
+     * @param allUser
+     * @param userShareVO
+     * @param list
+     * @return
+     */
+    private List getParentUser(List<UserShareVO>allUser,UserShareVO userShareVO,List <UserShareVO>list,UserShareVO rooUser){
+        logger.info("获取用户{}的上级用户,伞下所有用户{}",userShareVO.getName(),JSONObject.toJSONString(allUser));
+        if (userShareVO.getPartentId().equalsIgnoreCase(rooUser.getId())){
+            list.add(userShareVO);
+        }else {
+            for (UserShareVO user:allUser){
+                if (user.getId().equals(userShareVO.getPartentId())){
+                    list.add(user);
+                    getParentUser(allUser,user,list,rooUser);
+                }
+            }
+        }
+
+        return list;
     }
 
 }

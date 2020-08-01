@@ -32,6 +32,7 @@ import org.web3j.crypto.CipherException;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -125,17 +126,20 @@ public class TransactionServiceImpl extends ServiceImpl <TransactionMapper, Tran
      * @param toWallet 到账钱包
      */
     private void setTransBalance(BigDecimal transAmt, BigDecimal fee, Wallet fromWallet, Wallet toWallet) {
+        logger.info("转账转出账户钱包before=[{}],转出金额=[{}]",fromWallet,transAmt);
+        logger.info("转账转入账户钱包before=[{}],转入金额=[{}]",toWallet,transAmt);
         // 设置转出账户余额
         BigDecimal fromBalTotal = fromWallet.getBalTotal();
         BigDecimal fromBalAvail = fromWallet.getBalAvail();
         fromWallet.setBalTotal(fromBalTotal.subtract(transAmt).subtract(fee));
         fromWallet.setBalAvail(fromBalAvail.subtract(transAmt).subtract(fee));
-
+        logger.info("转账转出账户钱包after=[{}],转出金额=[{}]",fromWallet,transAmt);
         // 设置转入账户余额
         BigDecimal toBalTotal = toWallet.getBalTotal();
         BigDecimal toBalAvail = toWallet.getBalAvail();
         toWallet.setBalTotal(toBalTotal.add(transAmt));
         toWallet.setBalAvail(toBalAvail.add(transAmt));
+        logger.info("转账转入账户钱包after=[{}],转出金额=[{}]",toWallet,transAmt);
     }
 
     /**
@@ -148,7 +152,7 @@ public class TransactionServiceImpl extends ServiceImpl <TransactionMapper, Tran
      * @param trans      转账数量
      * @param fee        手续费
      */
-    private void saveTransfer(String userId, String walletType, Wallet fromWallet, Wallet toWallet, BigDecimal trans, BigDecimal fee) throws BusinessException {
+    private void saveTransfer(String userId, String walletType, Wallet fromWallet, Wallet toWallet, BigDecimal trans, BigDecimal fee) throws Exception {
         Transaction transaction = new Transaction();
         transaction.setTransId(BaseUtils.get64UUID());
         transaction.setFeeAmount(fee);
@@ -171,11 +175,16 @@ public class TransactionServiceImpl extends ServiceImpl <TransactionMapper, Tran
         fromWallet.setModifyTime(new Date());
         boolean fromWalletRes = walletService.updateById(fromWallet);
         if (!fromWalletRes) {
-            throw new BusinessException("update from_wallet false!");
+            logger.error("更新钱包余额{}失败",fromWallet.getAddress());
+            throw new BusinessException("更新钱包余额{}失败");
         }
         boolean toWalletRes = walletService.updateById(toWallet);
         if (!toWalletRes) {
-            throw new BusinessException("update to_wallet false!");
+            logger.error("更新钱包{}失败",fromWallet.getAddress());
+            throw new BusinessException("更新钱包余额{}失败");
+        }
+        if (fromWalletRes&&toWalletRes){
+            logger.info("更新钱包{}-{}成功",fromWallet.getAddress(),toWallet.getAddress());
         }
     }
 
