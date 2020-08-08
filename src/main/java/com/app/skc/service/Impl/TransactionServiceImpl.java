@@ -544,4 +544,31 @@ public class TransactionServiceImpl extends ServiceImpl <TransactionMapper, Tran
             return ResponseResult.fail(ApiErrEnum.NO_ENTRUST_ORDER);
         }
     }
+
+    @Override
+    public ResponseResult getOutAndIn(Map <String, Object> params, Page page) {
+        if (page == null) {
+            page = new Page();
+        }
+        PageHelper.startPage(page);
+        String userId = params.get("userId").toString();
+        String walletType = params.get("walletType").toString();
+        EntityWrapper<Transaction> entityWrapper = new EntityWrapper<>();
+        if (StringUtils.isNotBlank(userId)){
+            entityWrapper.eq(SkcConstants.TRANS_TYPE,"0");
+            entityWrapper.eq(SkcConstants.FROM_WALLET_TYPE,walletType);
+            entityWrapper.eq(SkcConstants.FROM_USER_ID, userId);
+            entityWrapper.or().eq(SkcConstants.TO_USER_ID,userId);
+            entityWrapper.orderDesc(SqlUtils.orderBy("create_time"));
+        }
+        List<Transaction> transactionList = transactionMapper.selectList(entityWrapper);
+        for (int i =0;i<transactionList.size();i++){
+            Transaction transaction = transactionList.get(i);
+            String fromUserId = transaction.getFromUserId();
+            if (userId.equals(fromUserId)){
+                transaction.setFromAmount(transaction.getFromAmount().negate());
+            }
+        }
+        return ResponseResult.success().setData(new PageInfo<>(transactionList));
+    }
 }

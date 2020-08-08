@@ -56,6 +56,22 @@ public class TransactionController {
 	}
 
 	/**
+	 * 获取交易记录
+	 * @param page 分页参数
+	 * @param map 参数 trans_type-交易类型,多个用英文逗号分隔；
+	 * @return
+	 */
+	@ApiOperation(value = "交易记录", notes = "获取收付款记录")
+	@GetMapping("/getOutAndIn")
+	@ResponseBody
+	public ResponseResult getOutAndIn(@RequestParam Map <String, Object> map, Page page) {
+		logger.info("[交易] - 开始收付款记录,param = [{}]", JSONObject.toJSONString(map));
+		return transactionService.getOutAndIn(map, page);
+	}
+
+
+
+	/**
 	 * 内部交易转账 <br/>
 	 * <li/>toWalletAddress 到账钱包地址
 	 * <li/>transferNumber 转账金额

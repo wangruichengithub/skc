@@ -97,4 +97,12 @@ public interface TransactionService extends IService<Transaction> {
      * 取消委托
      */
     ResponseResult cancelEntrust(String userId, String entrustOrder);
+
+    /**
+     *
+     * @param params
+     * @param page
+     * @return
+     */
+    ResponseResult getOutAndIn(Map <String, Object> params, Page page);
 }

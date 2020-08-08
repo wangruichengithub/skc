@@ -122,6 +122,7 @@ public class ContractServiceImpl extends ServiceImpl<ContractMapper, Contract> i
         wallet.setBalTotal(wallet.getBalAvail().subtract(price));
         wallet.setBalAvail(wallet.getBalAvail().subtract(price));
         wallet.setSurplusContract(price.multiply(contactDouble));
+        wallet.setComsumedContract(BigDecimal.ZERO);
         walletMapper.updateById(wallet);
     }
 

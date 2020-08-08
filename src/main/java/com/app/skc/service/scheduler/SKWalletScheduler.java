@@ -2,16 +2,11 @@ package com.app.skc.service.scheduler;
 
 import com.alibaba.fastjson.JSON;
 import com.app.skc.enums.InfuraInfo;
-import com.app.skc.enums.TransStatusEnum;
-import com.app.skc.enums.TransTypeEum;
 import com.app.skc.enums.WalletEum;
-import com.app.skc.mapper.TransactionMapper;
 import com.app.skc.mapper.WalletMapper;
-import com.app.skc.model.Transaction;
 import com.app.skc.model.Wallet;
 import com.app.skc.model.system.Config;
 import com.app.skc.service.system.ConfigService;
-import com.app.skc.utils.BaseUtils;
 import com.app.skc.utils.SkcConstants;
 import com.app.skc.utils.WebUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -50,11 +45,8 @@ import java.util.concurrent.ExecutionException;
 public class SKWalletScheduler {
 
     private static final Logger logger = LoggerFactory.getLogger(SKWalletScheduler.class);
-    private static final String LOG_PREFIX = "[交易充值] - ";
+    private static final String LOG_PREFIX = "[系统用户钱包余额扫描] - ";
 
-
-    @Autowired
-    private TransactionMapper transactionMapper;
     @Autowired
     private WalletMapper walletMapper;
     @Autowired
@@ -62,13 +54,13 @@ public class SKWalletScheduler {
     @Value("${recharge.local-address}")
     private String localAddress;
 
-    @Scheduled(cron = "0 */2 * * * ?")
+    @Scheduled(cron = "0 */6 * * * ?")
     public void invest() throws ExecutionException, InterruptedException {
         String address = WebUtils.getHostAddress();
         if (!address.equals(localAddress)) {
             return;
         }
-        logger.info("{}开始监听充值交易...", LOG_PREFIX);
+        logger.info("{}开始扫描所有钱包地址...", LOG_PREFIX);
         String contractAddress = InfuraInfo.USDT_CONTRACT_ADDRESS.getDesc();
         Map<String, Object> paramsMap = new HashMap<String, Object>();
         paramsMap.put("wallet_type", WalletEum.USDT.getCode());
@@ -76,7 +68,6 @@ public class SKWalletScheduler {
         Config walletAddress = configService.getByKey(SkcConstants.SYS_WALLET_ADDRESS);
         String sysWalletPath = configService.getByKey(SkcConstants.SYS_WALLET_FILE).getConfigValue();
         Config config = configService.getByKey(SkcConstants.INFURA_ADDRESS);
-//        Web3j web3j = Web3j.build(new HttpService("https://mainnet.infura.io/v3/2e130baab5ed43768780e3de46b44257"));
         Web3j web3j = Web3j.build(new HttpService(config.getConfigValue()));
         Web3ClientVersion web3ClientVersion = web3j.web3ClientVersion().sendAsync().get();
         String clientVersion = web3ClientVersion.getWeb3ClientVersion();
@@ -91,55 +82,19 @@ public class SKWalletScheduler {
                         //转手续费
                             Credentials credentials = WalletUtils.loadCredentials("", sysWalletPath);
                             Transfer.sendFunds(web3j, credentials, wallet.getAddress(), new BigDecimal(9), Convert.Unit.FINNEY).send();
-                            logger.info("{}钱包[{}]充值eth手续费转账成功，待下个批次执行充值.", LOG_PREFIX, wallet.getAddress());
+                            logger.info("{}钱包[{}]充值eth手续费转账成功，待下个批次执行.", LOG_PREFIX, wallet.getAddress());
                         } else {
                         //充值
-                        logger.info("{}开始钱包[{}]充值交易", LOG_PREFIX, wallet.getAddress());
-                        String transHash = transfer(web3j, wallet.getWalletPath(), wallet.getAddress(), walletAddress.getConfigValue(), contractAddress, balance);
-                            if (StringUtils.isNotBlank(transHash)) {
-                                // 交易记录
-                                Map map = new HashMap();
-                                map.put("trans_hash",transHash);
-                                List<Transaction> list = transactionMapper.selectByMap(map);
-                                if (list.size()==0){
-                                    Transaction transaction = new Transaction();
-                                    transaction.setTransId(BaseUtils.get64UUID());
-                                    transaction.setToUserId(wallet.getUserId());
-                                    transaction.setToWalletType(WalletEum.USDT.getCode());
-                                    transaction.setToWalletAddress(wallet.getAddress());
-                                    transaction.setToAmount(balance);
-                                    transaction.setFromAmount(balance);
-                                    transaction.setFromUserId(wallet.getUserId());
-                                    transaction.setFromWalletAddress(wallet.getAddress());
-                                    transaction.setFromWalletType(WalletEum.USDT.getCode());
-                                    transaction.setTransStatus(TransStatusEnum.SUCCESS.getCode());
-                                    transaction.setTransType(TransTypeEum.IN.getCode()); // 4-充值
-                                    transaction.setTransHash(transHash);
-                                    transaction.setRemark(TransTypeEum.IN.getDesc());
-                                    transaction.setCreateTime(new Date());
-                                    transaction.setModifyTime(new Date());
-                                    transactionMapper.insert(transaction);
-                                    logger.info("{}钱包[{}]充值记录保存成功，充值金额[{}].", LOG_PREFIX, wallet.getAddress(), balance.doubleValue());
-                                    // 钱包余额
-                                    wallet.setBalAvail(wallet.getBalAvail().add(balance));
-                                    wallet.setBalTotal(wallet.getBalTotal().add(balance));
-                                    walletMapper.updateById(wallet);
-                                    logger.info("{}钱包[{}]余额更新成功.", LOG_PREFIX, wallet.getAddress());
-                                }else{
-                                    logger.error("hash{} 重复",transHash);
-                                }
-
-                            } else {
-                                logger.warn("{}钱包[{}]充值交易失败，交易Hash为[{}].", LOG_PREFIX, wallet.getAddress(), transHash);
-                            }
+                        logger.info("{}开始钱包[{}]转入公司钱包", LOG_PREFIX, wallet.getAddress());
+                        transfer(web3j, wallet.getWalletPath(), wallet.getAddress(), walletAddress.getConfigValue(), contractAddress, balance);
                         }
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
-                    logger.error("{}钱包[{}]充值交易失败.", LOG_PREFIX, wallet.getAddress(), e);
+                    logger.error("{}钱包[{}]转入公司钱包失败.", LOG_PREFIX, wallet.getAddress(), e);
                 }
             }
-        logger.info("{}监听充值交易完成.", LOG_PREFIX);
+        logger.info("{}扫描用户钱包转入公司钱包完成.", LOG_PREFIX);
         }
 
         private BigDecimal getEthBalance(Web3j web3j,String address) throws IOException {

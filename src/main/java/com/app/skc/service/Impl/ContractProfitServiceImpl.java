@@ -179,6 +179,7 @@ public class ContractProfitServiceImpl extends ServiceImpl<IncomeMapper, Income>
         if (user.getName().equalsIgnoreCase("nxy666")||user.getName().equalsIgnoreCase("nxy777")){
             logger.info("开始计算用户:"+user.getName()+"的管理收益");
         }
+
         int directShare = effDirectSubUserList.size();
         BigDecimal totalContract = allShareTrans.get(user.getId()).getPrice();
         for (UserShareVO subUser : allEffSubUserList) {
@@ -198,6 +199,9 @@ public class ContractProfitServiceImpl extends ServiceImpl<IncomeMapper, Income>
         for (UserShareVO eachSubUser : effDirectSubUserList) {
             fulfillAbsEffSubUserList(absEffSubUserList, eachSubUser, curUserGrade);
         }
+        if("c191ac31d2f84c12be046215370446e1".equals(user.getId())) {
+            logger.info("开始计算用户:"+user.getName()+"的管理收益");
+        }
         //如果用户有临时等级或者青铜或以上
         if ((directShare >= 10 && totalContract.compareTo(new BigDecimal(80000)) >= 0) || userTempGrade != null) {
             //如果用户是临时等级
@@ -211,35 +215,38 @@ public class ContractProfitServiceImpl extends ServiceImpl<IncomeMapper, Income>
             //循环用户底下所以有效用户
             logger.info("用户伞下所有有效用户:{}",JSONObject.toJSONString(absEffSubUserList));
             for (UserShareVO eachSubUser : absEffSubUserList) {
+                if (user.getName().equalsIgnoreCase("nxy666")&&eachSubUser.getName().equalsIgnoreCase("nxy888")){
+                    logger.info("开始计算 nxy888");
+                }
                 if (incomeMap.get(eachSubUser.getId()) == null) {
                     continue;
                 }
-                if (eachSubUser.getName().equalsIgnoreCase("nyx888")){
-                    logger.info("开始计算 nyx888");
-                };
                 BigDecimal mngRate = new BigDecimal(oriMngRate.toString());
-                int subUserGrade = Integer.parseInt(eachSubUser.getGradeId());
+                Integer subUserGrade = Integer.parseInt(eachSubUser.getGradeId());
 
                 Integer tempUserGradde = getUserTempLevel(eachSubUser.getId());
-                List <UserShareVO> list = getLineList(eachSubUser,allEffSubUserList,user);
-                List <Integer>grade  = new ArrayList();
+                List<UserShareVO> list = getLineList(eachSubUser,allEffSubUserList);
+                List<Integer> grade  = new ArrayList();
                 //判断用户是否有临时等级
                 if (tempUserGradde != null) {
                     subUserGrade = tempUserGradde;
-                    grade.add(tempUserGradde);
                 }
+                grade.add(subUserGrade);
                 for(UserShareVO userShareGrades:list){
-                    if(getUserTempLevel(userShareGrades.getGradeId())!=null){
-                        grade.add(getUserTempLevel(userShareGrades.getGradeId()));
+                    if(getUserTempLevel(userShareGrades.getId())!=null){
+                        grade.add(getUserTempLevel(userShareGrades.getId()));
                     }else {
                         grade.add(Integer.parseInt(userShareGrades.getGradeId()));
                     }
                 }
                 Integer maxGrade = Collections.max(grade);
 
-                if (subUserGrade != 0) {
+                if (maxGrade != 0) {
                     //获取社区收益率
                     mngRate = mngRate.subtract(getUserGradeRate(maxGrade));
+                }
+                if (user.getName().equalsIgnoreCase("nxy666")||user.getName().equalsIgnoreCase("Nxy777")){
+                    logger.info("子用户[{}]为用户[{}]增加管理收益比例为[{}]", eachSubUser.getName(), user.getName(), mngRate.doubleValue());
                 }
                 if (mngRate.compareTo(BigDecimal.ZERO) <= 0) {
                     continue;
@@ -249,6 +256,9 @@ public class ContractProfitServiceImpl extends ServiceImpl<IncomeMapper, Income>
                     mngProfit = mngProfit.add(userStaticIn.multiply(mngRate).multiply(allShareTrans.get(user.getId()).getPrice().divide(allShareTrans.get(eachSubUser.getId()).getPrice(), RoundingMode.DOWN)));
                 } else {
                     mngProfit = mngProfit.add(userStaticIn.multiply(mngRate));
+                }
+                if (user.getName().equalsIgnoreCase("nxy666")||user.getName().equalsIgnoreCase("Nxy777")){
+                    logger.info("子用户[{}]为用户[{}]增加管理收益为[{}]", eachSubUser.getName(), user.getName(), mngProfit.doubleValue());
                 }
             }
             BigDecimal tempTotalProfit = mngProfit.add(contractIncome.getStaticIn()).add(contractIncome.getShareIn());
@@ -726,7 +736,7 @@ public class ContractProfitServiceImpl extends ServiceImpl<IncomeMapper, Income>
     }
 
     /**
-     * 获取U对SK的汇率，如1U=10SK时，汇率为10
+     * 获取U对SK的汇率，如1U=10SK时，汇率为0.1
      *
      * @return
      */
@@ -772,34 +782,28 @@ public class ContractProfitServiceImpl extends ServiceImpl<IncomeMapper, Income>
 
 
 
-    public List getLineList(UserShareVO subUser,List<UserShareVO>allUser,UserShareVO rootUser){
+    public List getLineList(UserShareVO curUser,List<UserShareVO> subAllUser){
         List list = new ArrayList();
-        getParentUser(allUser,subUser,list,rootUser);
-        logger.info("用户{}的上级用户是{}",subUser.getName(),JSONObject.toJSONString(list));
+        list.add(curUser);
+        getParentUser(subAllUser,curUser,list);
         return list;
     }
 
     /**
      * 获取上级用户
-     * @param allUser
-     * @param userShareVO
+     * @param subAllUser
+     * @param curUser
      * @param list
      * @return
      */
-    private List getParentUser(List<UserShareVO>allUser,UserShareVO userShareVO,List <UserShareVO>list,UserShareVO rooUser){
-        logger.info("获取用户{}的上级用户,伞下所有用户{}",userShareVO.getName(),JSONObject.toJSONString(allUser));
-        if (userShareVO.getPartentId().equalsIgnoreCase(rooUser.getId())){
-            list.add(userShareVO);
-        }else {
-            for (UserShareVO user:allUser){
-                if (user.getId().equals(userShareVO.getPartentId())){
-                    list.add(user);
-                    getParentUser(allUser,user,list,rooUser);
-                }
+    private void getParentUser(List<UserShareVO> subAllUser,UserShareVO curUser,List<UserShareVO> list){
+        for (UserShareVO user:subAllUser){
+            if (user.getId().equals(curUser.getPartentId())){
+                list.add(user);
+                getParentUser(subAllUser,user,list);
+                break;
             }
         }
-
-        return list;
     }
 
 }
