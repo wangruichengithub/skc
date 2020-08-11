@@ -34,7 +34,7 @@ spring:
     password: xxx
   redis:
     #redis 服务器地址
-    host: 129.226.181.145
+    host: 
     #redis端口
     port: 6379
     #redis 密码
